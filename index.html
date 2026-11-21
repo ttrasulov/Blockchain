@@ -226,11 +226,11 @@ function shuffle(arr) {
 }
 
 function startQuiz() {
-  questions = shuffle(QUESTIONS).map(q => {
-    const correctText = q.o[q.a];
-    const opts = shuffle(q.o);
-    return { q: q.q, o: opts, a: opts.indexOf(correctText) };
+  // Просто копируем вопросы как есть, без перемешивания
+  questions = QUESTIONS.map(q => {
+    return { q: q.q, o: q.o, a: q.a };
   });
+  
   current = 0;
   score = 0;
   document.getElementById("qTotal").textContent = questions.length;
