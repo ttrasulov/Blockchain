@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="kaa">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blockchain Quiz — 51 soraw</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --accent: #3b82f6;
+    --correct: #22c55e;
+    --wrong: #ef4444;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+  .container {
+    width: 100%;
+    max-width: 720px;
+    background: var(--card);
+    border-radius: 20px;
+    padding: 32px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  }
+  h1 { font-size: 1.6rem; margin-bottom: 8px; }
+  .subtitle { color: var(--muted); margin-bottom: 24px; font-size: .95rem; }
+
+  /* Прогресс */
+  .progress-bar { height: 8px; background: #334155; border-radius: 4px; overflow: hidden; margin-bottom: 8px; }
+  .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width .3s ease; }
+  .meta { display: flex; justify-content: space-between; font-size: .85rem; color: var(--muted); margin-bottom: 24px; }
+
+  /* Вопрос */
+  .question { font-size: 1.2rem; font-weight: 600; margin-bottom: 24px; line-height: 1.5; }
+
+  /* Ответы */
+  .options { display: flex; flex-direction: column; gap: 12px; }
+  .option {
+    padding: 14px 18px; background: #334155; border: 2px solid transparent; border-radius: 12px;
+    color: var(--text); font-size: 1rem; text-align: left; cursor: pointer; transition: all .2s; font-family: inherit;
+  }
+  .option:hover:not(:disabled) { background: #475569; border-color: var(--accent); }
+  .option:disabled { cursor: default; }
+  .option.correct { background: var(--correct); color: #052e16; font-weight: 600; }
+  .option.wrong { background: var(--wrong); color: #450a0a; font-weight: 600; }
+
+  /* Экран результатов */
+  .result { text-align: center; padding: 20px 0; }
+  .result .score-big { font-size: 3.5rem; font-weight: 800; color: var(--accent); margin: 16px 0; }
+  .result .message { font-size: 1.1rem; margin-bottom: 24px; color: var(--muted); }
+  .btn { padding: 14px 32px; background: var(--accent); color: white; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background .2s; }
+  .btn:hover { background: #2563eb; }
+  .hidden { display: none; }
+  .timer { font-variant-numeric: tabular-nums; font-weight: 700; }
+  .timer.danger { color: var(--wrong); }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Стартовый экран -->
+  <div id="startScreen">
+    <h1>⛓️ Blockchain Quiz</h1>
+    <p class="subtitle">51 soraw · hár sorawǵa 20 sekund · nátiyjení biliń</p>
+    <button class="btn" onclick="startQuiz()">Baslaw 🚀</button>
+  </div>
+
+  <!-- Экран викторины -->
+  <div id="quizScreen" class="hidden">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="meta">
+      <span>Soraw <b id="qNum">1</b> / <b id="qTotal">51</b></span>
+      <span class="timer" id="timer">⏱ 20s</span>
+      <span>Ball: <b id="scoreNow">0</b></span>
+    </div>
+    <div class="question" id="questionText"></div>
+    <div class="options" id="optionsBox"></div>
+  </div>
+
+  <!-- Экран результатов -->
+  <div id="resultScreen" class="hidden result">
+    <h1>Nátiyje 🎉</h1>
+    <div class="score-big" id="finalScore">0</div>
+    <div class="message" id="finalMessage"></div>
+    <button class="btn" onclick="location.reload()">Qaytadan 🔄</button>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   БАНК ВОПРОСОВ ПО БЛОКЧЕЙНУ (51 вопрос из файла)
+   ============================================================ */
+const QUESTIONS = [
+  { q: "Bloktaǵi nonce mánisi qanday maqsette qollanıladı?", o: ["Xeshti ózgertip, mayning shártine sáykes mánisti tabıw ushın", "Tranzakciyalardıń uluwma summasın tez esaplaw ushın", "Paydalanıwshı hamyanınıń mánzilin qáwipsiz kodlaw hám saqlaw ushın", "Blok jaratılgan anıq waqıttı tarmaq boylap sinxronizaciyalaw ushın"], a: 0 },
+  { q: "Blokcheynniń eń birinshi blogi qanday ataladı?", o: ["Primary (birlemshi) blok", "Alpha (dáslepki hám tiykarǵı) blok", "Origin (derek) blogi", "Genesis (baslangish) blok"], a: 3 },
+  { q: "Ne ushın hárbir blokcheyn DLT esaplanadı, biraq hárbir DLT blokcheyn emes?", o: ["DLT tek gana pul ótkermeleri ushın, blokcheyn bolsa hár qanday maǵlıwmat ushın", "DLT de kriptografiya ulıwma qollanılmaydı, blokcheynda bolsa qollanılıwı májbúriy", "Ayırım DLT ler maǵlıwmattı shinjır tárizli bloklarda emes, basqasha túrde saqlaydı", "DLT tek bir serverde isleydi, blokcheyn bolsa kóp serverde isleydi"], a: 2 },
+  { q: "DLT qısqartpası qalay ashıladı?", o: ["Decentralized Link Technology", "Distributed Ledger Technology", "Data Layer Transfer", "Digital Ledger Transaction"], a: 1 },
+  { q: "Tómendegilerden qaysı biri blokcheynniń tiykarǵı qásiyeti esaplanbaydı?", o: ["Birden-bir oraylıq basqarıwǵa tolıq boysınıw", "Tranzakciyalar tariyxınıń ashıq-aydınlıǵı", "Qatnasıwshılarǵa iseniw zárúrligin minimallastırıw", "Basqarıwdıń oraylaspaǵanlıǵı hám bólistirilgenligi"], a: 0 },
+  { q: "Bitkoin aq qaǵazınıń avtorı qaysı laqap astında belgili?", o: ["Gevin Vud", "Vitalik Buterin", "Charli Li", "Satoshi Nakamoto"], a: 3 },
+  { q: "Oraylaspaǵan hám bólistirilgen sistemalar arasındaǵı parıq qaysı juwapta durıs keltirilgen?", o: ["Bólistirilgen sistema tek bir orında isleydi, oraylaspaǵan sistema bolsa birneshe orında isleydi", "Oraylaspaǵan sistemada maǵlıwmat tek bir serverde, bólistirilgen sistemada bolsa kóp serverde saqlanadı", "Eki atama birdey mánisti bildiredi hám olar arasında heshqanday parıq joq", "Bólistirilgen sistema túyinleri bir shólkem qadaǵalawında bolıwı múmkin, oraylastırılmaganda bolsa birden-bir qadaǵalaw noqatı joq"], a: 3 },
+  { q: "Mayning procesinde ne ushın tek bloktın atı xeshlenedi, tranzakciyalardın tolıq dizimi emes?", o: ["Tranzakciyalar dizimi júdá qısqa bolǵanı ushın onı xeshlew ulıwma mánissiz esaplanadı", "Atama xeshleniwi tranzakciyalar qoltańbasın (imza) tekseriw procesiniń ornın tolıq basıp ketedi", "Tranzakciyalar Merkle tamırı arqalı atamaǵa baylanısqanı ushın atama xeshi olardıń pútinligin de támiyinleydi", "Tranzakciyalar xeshlenbeydi, sebebi olar shifrlangan halda jiberiledi hám hesh qashan ózgermeydi"], a: 2 },
+  { q: "Blokcheynniń ózgermew kepilligi ne ushın absolyut emes, bálkim itimal esaplanadı?", o: ["Bloklar yadta saqlanǵanı ushın server óshirilgende joǵalıp ketiwi múmkin hám bul kepillikti tómenletedi", "Jetkilikli esaplaw quwatlılıǵına iye hújimshi shinjır aqırın qayta jazıwı múmkin, blok tereńlesken sayın bul itimallıq kemeyedi", "Hárbir túyin óz qálewi boyınsha blok ishindegi tranzakciyalardı redaktorlaw huqıqına iye bolǵanı ushın", "Xesh funkciyalar birdey kiriske hár saparı túrli nátiyje shiǵaratuǵınlıǵı ushın jazıwlar ózgerip turadı"], a: 1 },
+  { q: "Oraylaspaǵan sistema ne ushın birden-bir nasazlıq noqatına (single point of failure) kemirek beyimlesken?", o: ["Tarmaqta tek bir rezerv nusqa saqlanıp, ol hár kúni jańalanatuǵınlıǵı ushın", "Maǵlıwmat hám basqarıw kóplegen túyinler arasında bólistirilgeni ushın", "Barlıq maǵlıwmatlar bir kúshli serverde shifrlanganı ushın", "Barlıq túyinler bir shólkem tárepinen basqarılgani ushın"], a: 1 },
+  { q: "Bitkoin aq qaǵazı (white paper) qaysı jılı jariyalangan?", o: ["2008-jılı", "2005-jılı", "2014-jılı", "2011-jılı"], a: 0 },
+  { q: "Blokcheyndegi \"isenimdi minimallastırıw\" (trust minimization) neni bildiredi?", o: ["Sistema tek bir isenimli shólkem qadaǵalawı astında islewi hám oǵan tayanıwın", "Sistemada isenim túsinigi bolmay, hámme nárse tosınnan bolatuǵınlıǵın", "Paydalanıwshılar bir-birin jeke tanıwı hám kepillik beriwi shárt ekenligin", "Qatnasıwshılar dáldalshıǵa isenbey, protokol hám kriptografiyaga súyenuǵının"], a: 3 },
+  { q: "Bitcoin aq qaǵazı teksti haqqında qaysı pikir durıs?", o: ["Onda sistema bloklar shinjırı sıpatında táriyiplengen, biraq \"blokcheyn\" ataması qollanılmaǵan", "Onda \"blokcheyn\" ataması atama hám annotatsiyada bir neshe márte qollanılǵan", "Onda tek \"distributed ledger\" ataması qollanılǵan hám bloklar ulıwma tilge alınbaǵan", "Onda \"smart kontrakt\" hám \"blokcheyn\" atamaları birgelikte tolıq táriyiplengen"], a: 0 },
+  { q: "Bitcoinda eki márte sarplanıw (double-spend) mashqalası isenimli úshinshi tárepsiz qalay sheshiledi?", o: ["Paydalanıwshılar bir-birine tranzakciya nusqaların jeke ózi tapsıradı hám óz ara tastıyıqlaydı", "Hárbir teńge tek bir túyinde saqlanadı hám basqa túyinlerge hesh qashan kóshirilmeydi", "Tranzakciyalardıń birden-bir tártiplengen tariyxı PoW arqalı pútkil tarmaq boyınsha kelisip alınadi", "Hár bir tranzakciya bank tárepinen óz aldına tastıyıqlanadı hám arnawlı licenziya menen rásmiylestiriledi"], a: 2 },
+  { q: "Tómendegilerden qaysı biri oraylasqan sistemaǵa mısal boladı?", o: ["Fayllardı paydalanıwshılar arasında almasatuǵın torrent tarmaǵı", "Mıńlap erkin túyinlerden ibarat Ethereum tarmaǵı", "Túyinleri teń huqıqlı isleytuǵın Bitcoin tarmaǵı", "Birden-bir serverde islewshi bank maǵlıwmatlar bazası"], a: 3 },
+  { q: "Blokcheynda hárbir blok ózinen aldıngı blok penen qaysı mağlıwmat arqalı baylanısadı?", o: ["Aldıngı bloktıń xesh mánisi", "Aldıngı blok kóleminiń mánisi", "Aldıngı bloktıń jabıq gilti", "Aldıngı bloktağı tranzakciyalar sanı"], a: 0 },
+  { q: "Bitcoin blok temasına tómendegilerden qaysı biri tikkeley kirmeydi?", o: ["Mayning ushın nonce bahası", "Tranzakciyalardıń tolıq dizimi", "Blok jaratılgan anıq waqıt belgisi (timestamp)", "Aldıngı bloktıń xesh mánisi"], a: 1 },
+  { q: "Shınjırdıń ortasındagı blokta bir tranzakciya ózgertilse, ne júz beredi?", o: ["Usı bloktıń xeshi ózgerip, keyingi bloklardıń baylanısı buzıladı", "Keyingi bloklar jańa xeshti avtomatikalıq qabıl etip beyimlesedi", "Tek usı bloktıń ózi jaramsız boladı, keyingileri buğan baylanıslı emes", "Tarmaq ózgeristi sezbey, shinjırdı dawam ete beredi"], a: 0 },
+  { q: "Blokcheindegi ózgermewshilik (immutability) qásiyeti neni anlatadi?", o: ["Shinjirğa jazılğan mağlıwmattı sezdirmey ózgertiwge bolmaytuğınlığın", "Shinjirdagi bloklar sanı qatań belgilengen muğdardan aspawın", "Tarmaqqa jańa túyinler qosıw imkaniyatı pútkilley sheklengenligin", "Paydalanıwshılardıń shaxsı tarmaqtağı hesh kimge belgili bolmawın"], a: 0 },
+  { q: "Bloktağı timestamp (waqıt belgisi) neni kórsetedi?", o: ["Bloktıń uluwma kólemin bayt esabında", "Bloktağı tranzakciyalar sanın", "Mayner alğan sıylıq muğdarın", "Blok jaratılğan shama menen waqıttı"], a: 3 },
+  { q: "SPV (ápiwayılastırılğan tólem tekseriwi) klient ne ushın jeńil esaplanadı?", o: ["Tek blok atamaların júklep, Merkle dáliyli arqalı tranzakciyanı tekseredi", "Barlıq bloklardı júklep, hárbir tranzakciyanı qayta esaplaydı", "Tek hamyan balansın esaplaydı hám qoltańbalardı ulıwma teksermeydi", "Tekseriwdi tolıq basqa bir oraylıq server orınlap beredi hám nátiyjeni jiberedi"], a: 0 },
+  { q: "Keccak-256 xesh funkciyası qaysı blokcheyn platformasında keń qollanıladı?", o: ["Litecoin", "Ethereum", "Bitcoin", "Dogecoin"], a: 1 },
+  { q: "Xesh funkciyanıń determinizm qásiyeti neni anlatadı?", o: ["Hár saparı xesh tosinnanlı shama sıpatında payda boladı", "Birdey kirisiw mağlıwmatı barlıq waqıtta birdey xesh beredi", "Túrli mağlıwmatlar barlıq waqıtta birdey xesh beredi", "Xeshten tiykarğı mağlıwmattı qayta tiklew múmkin boladı"], a: 1 },
+  { q: "Ethereumdagı Keccak-256 hám NIST standartlastırğan SHA3-256 haqqında qaysı dálil durıs?", o: ["SHA3-256 nıń shığıwı 512 bit, Keccak-256 nıń shığıwı bolsa 256 bit boladı", "Olar birdey funkciya bolıp, tek atları basqasha, nátiyjeleri bolsa barlıq waqıtta birdey boladı", "Ishki dúzilisi birdey, biraq padding qağıydaları hár qıylı bolğanı ushın birdey kiriske túrlishe xesh beredi", "Keccak-256 SHA-2 shańarağına, SHA3-256 bolsa Keccak shańarağına tiyisli funkciyalar esaplanadı"], a: 2 },
+  { q: "Bitcoin Merkle tereginiń bir qatlamında xeshler sanı taq bolsa, qanday jol tutıladı?", o: ["Terek qayta bastan basqa tártipte qurıladı", "Qatlamǵa nolge teń bolǵan arnawlı xesh qosıp qoyıladı", "Aqırǵı xesh nusqalanıp, ózi menen juplastırıladı", "Aqırǵı hesh terekten pútkilley alıp taslanadı"], a: 2 },
+  { q: "Qamzandı tiklew ushın qollanılatuǵın 12 yamasa 24 sózden ibarat izbe-izlik ne dep ataladı?", o: ["Seed-fraza", "Nonce-fraza", "Gaz-fraza", "Xesh-fraza"], a: 0 },
+  { q: "Merkle tamırı (Merkle root) degen ne?", o: ["Bloktaǵı barlıq tranzakciyalar summasınan alınǵan ápiwayı arifmetikalıq summa", "Bloktı jaratqan mayner hamyanınıń ashıq adresi", "Bloktaǵı barlıq tranzakciya xeshlerinen payda etilgen birden-bir xesh", "Bloktaǵı birinshi tranzakciyanıń jabıq gilti hám imzası"], a: 2 },
+  { q: "Bitcoin ECDSA imzasında qaysı elliptik iymek sızıqtan paydalanadı?", o: ["Egrilik 25519", "secp256r1", "secp256k1", "Ed"], a: 2 },
+  { q: "Cifrlı qoltańba jaratıw ushın qaysı giltten paydalanıladı?", o: ["Aqırǵı bloktıń xesh mánisi", "Alıwshınıń ashıq gilti", "Iyesiniń jabıq gilti", "Hamyannıń uluwma adresi"], a: 2 },
+  { q: "Bir táreplemelik qásiyetine qaray xesh mánisinen ne islew esaplaw jaǵınan imkanı joq?", o: ["Xeshtiń uzınlıǵın anıqlaw", "Dáslepki kirisiw maǵluwmatın tiklew", "Xeshti esaplaw", "Eki xesti bir-biri menen salıstırıw"], a: 1 },
+  { q: "ECDSAda eki túrli xabar bir jabıq gilt penen hám birdey bir mártelik k (nonce) menen qol qoyılsa, ne júz beredi?", o: ["Ashıq gilt avtomat ózgerip, hamyan mánzili de jańalanıp ketedi", "Imzalardan biri avtomatikalıq túrde jaramsız dep tabıladı", "Jabıq gilt eki imzadan esaplap tabılıwı múmkin boladı", "Hesh qanday qáwip joq, sebebi k mánisi ashıq esaplanadı"], a: 2 },
+  { q: "Sanlı qoltańbanı (imza) kim jaratadı hám kim tekseredi?", o: ["Mayner jaratadı, tarmaqtaǵı tek ǵana full node ler teksere aladı", "Jabıq gilt iyesi jaratadı, ashıq gilt járdeminde qálegen adam tekseredi", "Ashıq gilt iyesi jaratadı, jabıq gilt járdeminde qálegen adam tekseredi", "Hámyan programması jaratadı, tek hámyan programmasınıń ózi tekseredi"], a: 1 },
+  { q: "SHA-256 nıń qaysı qásiyeti H (klyuch || xabar) kórinisindegi ápiwayı MACti qáwipli etedi?", o: ["Kóshkisim tárizli effekttiń tolıq joqlıǵı hám nátiyjeniń aldın ala boljanıwı", "Xesh halatın dawam ettirip, xabarǵa giltsiz qosımsha jalǵaw imkaniyatı (length extension)", "Shıǵıw uzınlıǵınıń júdá qısqalıǵı hám sol sebepli giltti boljaw ańsatlıǵı", "Kolliziyalardı bir neshe sekund ishinde tabıw múmkinligi hám bul pútkil qáwipsizlikti buzıwı"], a: 1 },
+  { q: "Merkle tereginde 8 tranzakciya bolsa, bir tranzakciyanı korenge qarata tekseriw ushın neshe qońsılas xesh kerek boladı?", o: ["7", "3", "2", "4"], a: 1 },
+  { q: "Bitcoin P2PKH adresi ashıq giltten qaysı xeshlew izbe-izligi arqalı alınadı?", o: ["Izbe-iz eki márte MD5 funkciyası", "Tek gana Keccak-256 funkciyası", "Dáslep SHA-1, soń SHA-512", "Aldın SHA-256, soń RIPEMD-160"], a: 3 },
+  { q: "Ethereum esap mánzili qalay qáliplestiriledi?", o: ["Ashıq gilttiń tolıq nusqasın Base58 kodlaw arqalı", "Jabıq gilt SHA-256 xeshiniń dáslepki 32 baytınan", "Ashıq gilt Keccak-256 xeshiniń sońǵı 20 baytınan", "Seed-fraza sózleriniń baslanǵısh háriplerinen"], a: 2 },
+  { q: "HD-hámyanlardıń (BIP-32) tiykarǵı abzallıǵı ne?", o: ["Hár bir tranzakciya ushın jańa seed-fraza jaratılıp, onı óz aldına este tutıw talap etiliwi", "Bir seed-fraza tiykarında kóp gilt juplıqların deterministlik payda etiw hám tiklew", "Tranzakciya komissiyasın avtomat túrde nolge túsiriw imkaniyatı", "Jabıq giltlerdi tarmaq túyinlerinde ashıq halda saqlaw imkaniyatı"], a: 1 },
+  { q: "Kóshkili tárizli effekt neni bildiredi?", o: ["Kiriwdegi kishi ózgeris xeshti keskin ózgertip jiberetuǵının", "Xeshlaw tezligi maǵlıwmat kólemi artıwı menen sezilerli páseyip barıwın", "Xesh uzınlıǵı kiriw kólemine qarap toqtawsız artıp barıwın", "Xeshler bir-birine uqsas mánislerge jaqınlasıp barıwın"], a: 0 },
+  { q: "Kolliziya degen ne?", o: ["Eki túrli kirisiw maǵlıwmatı ushın birdey xesh payda bolıwı", "Birdey kirisiw maǵlıwmatı ushın túrli xesh payda bolıwı", "Xeshtiń uzınlıǵı kiriw kóleminen de úlken bolıp ketiw jaǵdayı", "Jabıq gilttiń tosattan biygana shaxsqa ashılıwı"], a: 0 },
+  { q: "SHA-256 funkciyası kiriwshi maǵlıwmattan qanday uzınlıqtaǵı xesh payda etedi?", o: ["160 bit", "512 bit", "256 bit", "128 bit"], a: 2 },
+  { q: "PoW hám PBFT finality (juwmaqlılıq) jaǵınan qalay parıqlanadi?", o: ["PoW da juwmaqlılıq deterministlik, PBFT da bolsa itimallıq boladı", "Ekewinde de juwmaqlılıq tek itimallıq esaplanadı", "Ekewinde de shinjırdıń qayta dúziliwi múmkin emes", "PoW da juwmaqlılıq itimallıq, PBFT da deterministlik boladı"], a: 3 },
+  { q: "51% hújimi neni anlatadı?", o: ["Hújimshi barlıq paydalanıwshılardıń jabıq giltin biletuǵının", "Hújimshi tranzakciyalardıń 51% in shifrlap, oqıwǵa múmkin bolmaytuǵın etip qoyıwın", "Hújim etiwshi tarmaq esaplaw quwatnıń yarımınan kóbin qadaǵalawın", "Hújimshi túyinlerdiń 51% in fizikalıq óshirip qoyıwın"], a: 2 },
+  { q: "DPoS sistemasında validatorlardı (delegatlardı) kim tańlaydı?", o: ["Tek tarmaq tiykarın salıwshılar tayınlaydı", "Tosınnan tańlaw tiykarında tayınlanadı", "Eń kúshli kompyuter iyeleri tańlanadı", "Token iyeleri dawıs berip saylaydı"], a: 3 },
+  { q: "Ethereum tarmaǵınıń PoW dan PoS ǵa ótiwi qanday at penen ataladı?", o: ["Fork", "The Swap", "Shift", "Birlesiw"], a: 3 },
+  { q: "FLP (Fischer-Lynch-Paterson) nátiyjesi neni dálilleydi?", o: ["Asinxron tarmaqta bir túyin islemey qalıwı mümkin bolsa, kelisiw kepillik bermeytuǵınlıǵın", "Hár qanday konsensus algoritmi bir sekund ishinde juwmaqlanıwı kerekligin", "Sinxron tarmaqta hesh qanday algoritm kelisimge ulıwma erise almaytuǵınlıǵın", "Vizantiya qátelerinde kelisiw ushın keminde 2f+1 túyin jeterli ekenligin"], a: 0 },
+  { q: "Ethereum PoS da blok finallastırılıwı (finalized) ushın ne talap etiledi?", o: ["Checkpoint izbe-iz eki epoxada ulıwma staketiń keminde 2/3 bólimi dawısın alıwı", "Maynerler tárepinen keminde 6 tastıyıqlaw (confirmation) beriliwi", "Barlıq validatorlardıń bir dawıstan qollap-quwatlawı", "Checkpoint bir blokta ulıwma staketiń yarımınan bir dawıs kóp bólimin alıwı"], a: 0 },
+  { q: "PoW sistemasında jańa bloklardı jaratıw menen shuǵıllanıwshı qatnasıwshı qalay ataladı?", o: ["Delegat", "Mayner", "Validator", "Orakul"], a: 1 },
+  { q: "PoS sistemasında blok jaratıwshı validator tańlawǵa tiykarınan ne tásir etedi?", o: ["Kompyuterdiń esaplaw tezligi hám quwatı", "Hámyan jaratılǵannan berli ótken waqıt", "Túyinniń tarmaqtaǵı IP adresi", "girewge qoyılǵan tokenler (stake) muǵdarı"], a: 3 },
+  { q: "Raft algoritmi 5 túyinnen ibarat klasterde neshe túyin buzılıwına shıdamlı boladı hám Vizantiya qátelerine shıdamlı ma?", o: ["2 túyinge shıdamlı, Vizantiya qátelerine shıdamlı emes", "2 túyinge shıdamlı hám Vizantiya qátelerine de shıdamlı", "1 túyinge shıdamlı hám Vizantiya qátelerine shıdamlı", "4 túyinge shıdamlı, biraq Vizantiya qátelerine shıdamlı emes"], a: 0 },
+  { q: "PoA algoritminde bloklardı kimler tastıyıqlaydı?", o: ["Eń kóp token girewge qoyǵan qálegen paydalanıwshı", "Eń kóp elektr energiyasın sarplaǵan hám eń kúshli maynerler toparı", "Tosınnan tańlanǵan ápiwayı paydalanıwshılar", "Aldınnan tańlanǵan hám abıroyı menen juwap beretuǵın validatorlar"], a: 3 },
+  { q: "PoS sistemalarda \"nothing at stake\" mashqalasının mánisi nede?", o: ["Maynerler esaplaw resursın biykarǵa sarplap, tarmaqtı ástelestiriwi", "Tarmaqta jeterli muǵdardaǵı tokenler joqlıǵı hám bahanıń túsiwi", "Validatorlar token girewin ulıwma qoya almawı hám sol sebepli qatnasa almawı", "Validator bir waqıtta birneshe forkti qollap-quwatlaw arzan túsiwi"], a: 3 }
+];
+
+/* ============================================================
+   ЛОГИКА ВИКТОРИНЫ
+   ============================================================ */
+const TIME_PER_QUESTION = 20;
+
+let questions = [];
+let current = 0;
+let score = 0;
+let timerId = null;
+let timeLeft = TIME_PER_QUESTION;
+let locked = false;
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function startQuiz() {
+  questions = shuffle(QUESTIONS).map(q => {
+    const correctText = q.o[q.a];
+    const opts = shuffle(q.o);
+    return { q: q.q, o: opts, a: opts.indexOf(correctText) };
+  });
+  current = 0;
+  score = 0;
+  document.getElementById("qTotal").textContent = questions.length;
+  document.getElementById("startScreen").classList.add("hidden");
+  document.getElementById("quizScreen").classList.remove("hidden");
+  showQuestion();
+}
+
+function showQuestion() {
+  locked = false;
+  const q = questions[current];
+  document.getElementById("qNum").textContent = current + 1;
+  document.getElementById("scoreNow").textContent = score;
+  document.getElementById("progressFill").style.width = ((current) / questions.length * 100) + "%";
+  document.getElementById("questionText").textContent = q.q;
+
+  const box = document.getElementById("optionsBox");
+  box.innerHTML = "";
+  q.o.forEach((opt, idx) => {
+    const btn = document.createElement("button");
+    btn.className = "option";
+    btn.textContent = opt;
+    btn.onclick = () => selectAnswer(idx, btn);
+    box.appendChild(btn);
+  });
+  startTimer();
+}
+
+function startTimer() {
+  clearInterval(timerId);
+  timeLeft = TIME_PER_QUESTION;
+  const timerEl = document.getElementById("timer");
+  timerEl.classList.remove("danger");
+  timerEl.textContent = `⏱ ${timeLeft}s`;
+  timerId = setInterval(() => {
+    timeLeft--;
+    timerEl.textContent = `⏱ ${timeLeft}s`;
+    if (timeLeft <= 5) timerEl.classList.add("danger");
+    if (timeLeft <= 0) { clearInterval(timerId); timeUp(); }
+  }, 1000);
+}
+
+function timeUp() {
+  if (locked) return;
+  locked = true;
+  const q = questions[current];
+  const btns = document.querySelectorAll(".option");
+  btns.forEach((b, i) => {
+    b.disabled = true;
+    if (i === q.a) b.classList.add("correct");
+  });
+  setTimeout(nextQuestion, 1200);
+}
+
+function selectAnswer(idx, btn) {
+  if (locked) return;
+  locked = true;
+  clearInterval(timerId);
+  const q = questions[current];
+  const btns = document.querySelectorAll(".option");
+  btns.forEach(b => b.disabled = true);
+  if (idx === q.a) {
+    btn.classList.add("correct");
+    score++;
+    document.getElementById("scoreNow").textContent = score;
+  } else {
+    btn.classList.add("wrong");
+    btns[q.a].classList.add("correct");
+  }
+  setTimeout(nextQuestion, 1000);
+}
+
+function nextQuestion() {
+  current++;
+  if (current < questions.length) { showQuestion(); } else { finishQuiz(); }
+}
+
+function finishQuiz() {
+  clearInterval(timerId);
+  document.getElementById("quizScreen").classList.add("hidden");
+  document.getElementById("resultScreen").classList.remove("hidden");
+  const total = questions.length;
+  const percent = Math.round(score / total * 100);
+  document.getElementById("finalScore").textContent = `${score} / ${total}`;
+  let msg = "";
+  if (percent >= 90) msg = "🏆 Ájayıp! Siz Blockchain boyınsha ekspertsiz!";
+  else if (percent >= 70) msg = "🎉 Jaqsı nátiyje! Biraz shınıǵıw menen 100% boladı.";
+  else if (percent >= 50) msg = "👍 Orta nátiyje. Materialdı qayta kórip shıǵıń.";
+  else msg = "📚 Basıw. Eske túsiriw kerek — qaytadan urınıp kóriń!";
+  document.getElementById("finalMessage").textContent = `${percent}% — ${msg}`;
+}
+</script>
+</body>
+</html>
