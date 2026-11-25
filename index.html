@@ -32,6 +32,18 @@
     border-radius: 20px;
     padding: 32px;
     box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    position: relative;
+  }
+  /* Подпись автора */
+  .credit {
+    position: absolute;
+    top: 14px;
+    right: 20px;
+    font-size: .8rem;
+    color: var(--muted);
+    letter-spacing: .5px;
+    user-select: none;
+    opacity: .8;
   }
   h1 { font-size: 1.6rem; margin-bottom: 8px; }
   .subtitle { color: var(--muted); margin-bottom: 24px; font-size: .95rem; }
@@ -77,6 +89,7 @@
 </head>
 <body>
 <div class="container">
+  <div class="credit">designed by ttrasulov</div>
 
   <!-- Стартовый экран -->
   <div id="startScreen">
@@ -224,6 +237,7 @@ let current = 0;
 let score = 0;
 let locked = false;
 let answers = [];
+let autoNextId = null;
 
 function startQuiz() {
   questions = QUESTIONS.map(q => ({ q: q.q, o: q.o, a: q.a }));
@@ -237,6 +251,8 @@ function startQuiz() {
 }
 
 function showQuestion() {
+  clearTimeout(autoNextId);
+  autoNextId = null;
   locked = false;
   const q = questions[current];
   document.getElementById("qNum").textContent = current + 1;
@@ -264,9 +280,7 @@ function showQuestion() {
   // Навигация
   document.getElementById("backBtn").disabled = (current === 0);
   const nextBtn = document.getElementById("nextBtn");
-  // Вперёд можно, если на текущий вопрос уже дан ответ (или это не последний вопрос — но лучше требовать ответ)
   nextBtn.disabled = (prevAnswer === -1);
-  // Меняем текст кнопки на последнем вопросе
   if (current === questions.length - 1) {
     nextBtn.textContent = "Juwmaqlaw 🏁";
   } else {
@@ -285,7 +299,8 @@ function selectAnswer(idx, btn) {
   const btns = document.querySelectorAll(".option");
   btns.forEach(b => b.disabled = true);
   answers[current] = idx;
-  if (idx === q.a) {
+  const isCorrect = (idx === q.a);
+  if (isCorrect) {
     btn.classList.add("correct");
     score++;
     document.getElementById("scoreNow").textContent = score;
@@ -293,12 +308,19 @@ function selectAnswer(idx, btn) {
     btn.classList.add("wrong");
     btns[q.a].classList.add("correct");
   }
-  // Активируем кнопку "Вперёд" после ответа
   document.getElementById("nextBtn").disabled = false;
+
+  // Если ответ правильный — автоматический переход на следующий вопрос
+  if (isCorrect) {
+    autoNextId = setTimeout(() => {
+      nextQuestion();
+    }, 1000);
+  }
 }
 
 function nextQuestion() {
-  // Нельзя идти вперёд без ответа
+  clearTimeout(autoNextId);
+  autoNextId = null;
   if (answers[current] === -1) return;
   current++;
   if (current < questions.length) {
@@ -309,6 +331,8 @@ function nextQuestion() {
 }
 
 function prevQuestion() {
+  clearTimeout(autoNextId);
+  autoNextId = null;
   if (current > 0) {
     current--;
     showQuestion();
@@ -316,6 +340,8 @@ function prevQuestion() {
 }
 
 function finishQuiz() {
+  clearTimeout(autoNextId);
+  autoNextId = null;
   document.getElementById("quizScreen").classList.add("hidden");
   document.getElementById("resultScreen").classList.remove("hidden");
   const total = questions.length;
