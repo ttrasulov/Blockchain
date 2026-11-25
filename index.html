@@ -45,7 +45,7 @@
   .question { font-size: 1.2rem; font-weight: 600; margin-bottom: 24px; line-height: 1.5; }
 
   /* Ответы */
-  .options { display: flex; flex-direction: column; gap: 12px; }
+  .options { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
   .option {
     padding: 14px 18px; background: #334155; border: 2px solid transparent; border-radius: 12px;
     color: var(--text); font-size: 1rem; text-align: left; cursor: pointer; transition: all .2s; font-family: inherit;
@@ -55,15 +55,22 @@
   .option.correct { background: var(--correct); color: #052e16; font-weight: 600; }
   .option.wrong { background: var(--wrong); color: #450a0a; font-weight: 600; }
 
+  /* Кнопка назад */
+  .nav { display: flex; justify-content: flex-start; }
+  .btn-back {
+    padding: 10px 24px; background: #475569; color: var(--text); border: none; border-radius: 10px;
+    font-size: .95rem; font-weight: 600; cursor: pointer; transition: background .2s; font-family: inherit;
+  }
+  .btn-back:hover:not(:disabled) { background: #64748b; }
+  .btn-back:disabled { opacity: .4; cursor: default; }
+
   /* Экран результатов */
   .result { text-align: center; padding: 20px 0; }
   .result .score-big { font-size: 3.5rem; font-weight: 800; color: var(--accent); margin: 16px 0; }
   .result .message { font-size: 1.1rem; margin-bottom: 24px; color: var(--muted); }
-  .btn { padding: 14px 32px; background: var(--accent); color: white; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background .2s; }
+  .btn { padding: 14px 32px; background: var(--accent); color: white; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background .2s; font-family: inherit; }
   .btn:hover { background: #2563eb; }
   .hidden { display: none; }
-  .timer { font-variant-numeric: tabular-nums; font-weight: 700; }
-  .timer.danger { color: var(--wrong); }
 </style>
 </head>
 <body>
@@ -72,7 +79,7 @@
   <!-- Стартовый экран -->
   <div id="startScreen">
     <h1>⛓️ Blockchain Quiz</h1>
-    <p class="subtitle">100 soraw · hár sorawǵa 20 sekund · nátiyjení biliń</p>
+    <p class="subtitle">100 soraw · nátiyjení biliń</p>
     <button class="btn" onclick="startQuiz()">Baslaw 🚀</button>
   </div>
 
@@ -81,11 +88,13 @@
     <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
     <div class="meta">
       <span>Soraw <b id="qNum">1</b> / <b id="qTotal">100</b></span>
-      <span class="timer" id="timer">⏱ 20s</span>
       <span>Ball: <b id="scoreNow">0</b></span>
     </div>
     <div class="question" id="questionText"></div>
     <div class="options" id="optionsBox"></div>
+    <div class="nav">
+      <button class="btn-back" id="backBtn" onclick="prevQuestion()">← Artqa</button>
+    </div>
   </div>
 
   <!-- Экран результатов -->
@@ -207,32 +216,20 @@ const QUESTIONS = [
 /* ============================================================
    ЛОГИКА ВИКТОРИНЫ
    ============================================================ */
-const TIME_PER_QUESTION = 20;
-
 let questions = [];
 let current = 0;
 let score = 0;
-let timerId = null;
-let timeLeft = TIME_PER_QUESTION;
 let locked = false;
-
-function shuffle(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
+let answers = []; // хранит выбранный индекс для каждого вопроса (-1 если не отвечен)
 
 function startQuiz() {
-  // Просто копируем вопросы как есть, без перемешивания
   questions = QUESTIONS.map(q => {
     return { q: q.q, o: q.o, a: q.a };
   });
   
   current = 0;
   score = 0;
+  answers = new Array(questions.length).fill(-1);
   document.getElementById("qTotal").textContent = questions.length;
   document.getElementById("startScreen").classList.add("hidden");
   document.getElementById("quizScreen").classList.remove("hidden");
@@ -249,49 +246,36 @@ function showQuestion() {
 
   const box = document.getElementById("optionsBox");
   box.innerHTML = "";
+  const prevAnswer = answers[current];
   q.o.forEach((opt, idx) => {
     const btn = document.createElement("button");
     btn.className = "option";
     btn.textContent = opt;
-    btn.onclick = () => selectAnswer(idx, btn);
+    if (prevAnswer !== -1) {
+      btn.disabled = true;
+      if (idx === q.a) btn.classList.add("correct");
+      if (idx === prevAnswer && prevAnswer !== q.a) btn.classList.add("wrong");
+    } else {
+      btn.onclick = () => selectAnswer(idx, btn);
+    }
     box.appendChild(btn);
   });
-  startTimer();
-}
 
-function startTimer() {
-  clearInterval(timerId);
-  timeLeft = TIME_PER_QUESTION;
-  const timerEl = document.getElementById("timer");
-  timerEl.classList.remove("danger");
-  timerEl.textContent = `⏱ ${timeLeft}s`;
-  timerId = setInterval(() => {
-    timeLeft--;
-    timerEl.textContent = `⏱ ${timeLeft}s`;
-    if (timeLeft <= 5) timerEl.classList.add("danger");
-    if (timeLeft <= 0) { clearInterval(timerId); timeUp(); }
-  }, 1000);
-}
-
-function timeUp() {
-  if (locked) return;
-  locked = true;
-  const q = questions[current];
-  const btns = document.querySelectorAll(".option");
-  btns.forEach((b, i) => {
-    b.disabled = true;
-    if (i === q.a) b.classList.add("correct");
-  });
-  setTimeout(nextQuestion, 1200);
+  // Кнопка "Назад" активна, если это не первый вопрос
+  const backBtn = document.getElementById("backBtn");
+  backBtn.disabled = (current === 0);
+  if (prevAnswer !== -1) {
+    locked = true;
+  }
 }
 
 function selectAnswer(idx, btn) {
   if (locked) return;
   locked = true;
-  clearInterval(timerId);
   const q = questions[current];
   const btns = document.querySelectorAll(".option");
   btns.forEach(b => b.disabled = true);
+  answers[current] = idx;
   if (idx === q.a) {
     btn.classList.add("correct");
     score++;
@@ -300,6 +284,10 @@ function selectAnswer(idx, btn) {
     btn.classList.add("wrong");
     btns[q.a].classList.add("correct");
   }
+  // Автоматический переход убран — пользователь сам нажимает "Назад" или мы добавляем кнопку "Далее"
+  // Но нужно дать возможность перейти дальше. Добавим кнопку "Далее" программно? 
+  // Вместо этого сделаем кнопку "Назад" и автоматический переход через 1 секунду, как раньше, 
+  // но с возможностью вернуться. Оставим автопереход.
   setTimeout(nextQuestion, 1000);
 }
 
@@ -308,8 +296,14 @@ function nextQuestion() {
   if (current < questions.length) { showQuestion(); } else { finishQuiz(); }
 }
 
+function prevQuestion() {
+  if (current > 0) {
+    current--;
+    showQuestion();
+  }
+}
+
 function finishQuiz() {
-  clearInterval(timerId);
   document.getElementById("quizScreen").classList.add("hidden");
   document.getElementById("resultScreen").classList.remove("hidden");
   const total = questions.length;
