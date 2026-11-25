@@ -55,14 +55,16 @@
   .option.correct { background: var(--correct); color: #052e16; font-weight: 600; }
   .option.wrong { background: var(--wrong); color: #450a0a; font-weight: 600; }
 
-  /* Кнопка назад */
-  .nav { display: flex; justify-content: flex-start; }
-  .btn-back {
+  /* Навигация */
+  .nav { display: flex; justify-content: space-between; gap: 12px; }
+  .btn-nav {
     padding: 10px 24px; background: #475569; color: var(--text); border: none; border-radius: 10px;
     font-size: .95rem; font-weight: 600; cursor: pointer; transition: background .2s; font-family: inherit;
   }
-  .btn-back:hover:not(:disabled) { background: #64748b; }
-  .btn-back:disabled { opacity: .4; cursor: default; }
+  .btn-nav:hover:not(:disabled) { background: #64748b; }
+  .btn-nav:disabled { opacity: .4; cursor: default; }
+  .btn-nav.primary { background: var(--accent); color: white; }
+  .btn-nav.primary:hover:not(:disabled) { background: #2563eb; }
 
   /* Экран результатов */
   .result { text-align: center; padding: 20px 0; }
@@ -93,7 +95,8 @@
     <div class="question" id="questionText"></div>
     <div class="options" id="optionsBox"></div>
     <div class="nav">
-      <button class="btn-back" id="backBtn" onclick="prevQuestion()">← Artqa</button>
+      <button class="btn-nav" id="backBtn" onclick="prevQuestion()">← Artqa</button>
+      <button class="btn-nav primary" id="nextBtn" onclick="nextQuestion()">Alǵa →</button>
     </div>
   </div>
 
@@ -220,13 +223,10 @@ let questions = [];
 let current = 0;
 let score = 0;
 let locked = false;
-let answers = []; // хранит выбранный индекс для каждого вопроса (-1 если не отвечен)
+let answers = [];
 
 function startQuiz() {
-  questions = QUESTIONS.map(q => {
-    return { q: q.q, o: q.o, a: q.a };
-  });
-  
+  questions = QUESTIONS.map(q => ({ q: q.q, o: q.o, a: q.a }));
   current = 0;
   score = 0;
   answers = new Array(questions.length).fill(-1);
@@ -261,9 +261,18 @@ function showQuestion() {
     box.appendChild(btn);
   });
 
-  // Кнопка "Назад" активна, если это не первый вопрос
-  const backBtn = document.getElementById("backBtn");
-  backBtn.disabled = (current === 0);
+  // Навигация
+  document.getElementById("backBtn").disabled = (current === 0);
+  const nextBtn = document.getElementById("nextBtn");
+  // Вперёд можно, если на текущий вопрос уже дан ответ (или это не последний вопрос — но лучше требовать ответ)
+  nextBtn.disabled = (prevAnswer === -1);
+  // Меняем текст кнопки на последнем вопросе
+  if (current === questions.length - 1) {
+    nextBtn.textContent = "Juwmaqlaw 🏁";
+  } else {
+    nextBtn.textContent = "Alǵa →";
+  }
+
   if (prevAnswer !== -1) {
     locked = true;
   }
@@ -284,16 +293,19 @@ function selectAnswer(idx, btn) {
     btn.classList.add("wrong");
     btns[q.a].classList.add("correct");
   }
-  // Автоматический переход убран — пользователь сам нажимает "Назад" или мы добавляем кнопку "Далее"
-  // Но нужно дать возможность перейти дальше. Добавим кнопку "Далее" программно? 
-  // Вместо этого сделаем кнопку "Назад" и автоматический переход через 1 секунду, как раньше, 
-  // но с возможностью вернуться. Оставим автопереход.
-  setTimeout(nextQuestion, 1000);
+  // Активируем кнопку "Вперёд" после ответа
+  document.getElementById("nextBtn").disabled = false;
 }
 
 function nextQuestion() {
+  // Нельзя идти вперёд без ответа
+  if (answers[current] === -1) return;
   current++;
-  if (current < questions.length) { showQuestion(); } else { finishQuiz(); }
+  if (current < questions.length) {
+    showQuestion();
+  } else {
+    finishQuiz();
+  }
 }
 
 function prevQuestion() {
